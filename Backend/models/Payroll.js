@@ -1,3 +1,4 @@
+
 const mongoose = require("mongoose");
 
 const payrollSchema = new mongoose.Schema(
@@ -43,6 +44,34 @@ const payrollSchema = new mongoose.Schema(
             type: String,
             enum: ["Pending", "Paid"],
             default: "Pending"
+        },
+
+        payoutStatus: {
+            type: String,
+            enum: [
+                "Not Started",
+                "Processing",
+                "Pending",
+                "Processed",
+                "Failed",
+                "Reversed"
+            ],
+            default: "Not Started"
+        },
+
+        razorpayPayoutId: {
+            type: String,
+            default: null
+        },
+
+        payoutIdempotencyKey: {
+            type: String,
+            default: null
+        },
+
+        payoutUtr: {
+            type: String,
+            default: null
         }
     },
     {
@@ -50,6 +79,9 @@ const payrollSchema = new mongoose.Schema(
     }
 );
 
-const Payroll = mongoose.model("Payroll", payrollSchema);
+payrollSchema.index(
+    { employeeId: 1, month: 1 },
+    { unique: true }
+);
 
-module.exports = Payroll;
+module.exports = mongoose.model("Payroll", payrollSchema);

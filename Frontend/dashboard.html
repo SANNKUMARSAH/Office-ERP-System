@@ -201,6 +201,40 @@
 
             </button>
 
+<!-- CRM MODULES -->
+
+<!-- Customers -->
+<button
+    type="button"
+    class="menu-item management-menu"
+    data-page="customers"
+>
+    <span class="menu-icon">👥</span>
+    <span>Customers</span>
+</button>
+
+<!-- Leads -->
+<button
+    type="button"
+    class="menu-item management-menu"
+    data-page="leads"
+>
+    <span class="menu-icon">🎯</span>
+    <span>Leads</span>
+</button>
+
+<!-- Follow-ups -->
+<button
+    type="button"
+    class="menu-item management-menu"
+    data-page="followups"
+>
+    <span class="menu-icon">📞</span>
+    <span>Follow-ups</span>
+</button>
+
+
+
 
             <!-- Payroll - ADMIN -->
 
@@ -238,6 +272,14 @@
                 </span>
 
             </button>
+            
+<!-- PAYMENT MANAGEMENT -->
+<button type="button" class="menu-item" data-page="payments">
+    <span class="menu-icon">💳</span>
+    <span>Payments</span>
+</button>
+
+
 
 
             <!-- Settings - ADMIN -->
@@ -304,7 +346,7 @@
              MAIN CONTENT
         =================================================== -->
 
-        <main class="main-content">
+<main class="main-content" id="mainContent">            
 
 
             <!-- Page Header -->
@@ -346,116 +388,74 @@
                  DASHBOARD CARDS
             =================================================== -->
 
-            <section
-                id="dashboardCards"
-                class="dashboard-cards"
-            >
 
+<section id="dashboardCards" class="dashboard-cards">
 
-                <!-- Employees -->
+    <!-- Total Employees -->
+    <div class="stat-card admin-card"
+         data-card="employees"
+         role="button"
+         tabindex="0"
+         onclick="openPage('employees')"
+         onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openPage('employees')}">
 
-                <div
-                    class="stat-card admin-card"
-                    data-card="employees"
-                >
+        <div class="stat-icon">👥</div>
 
-                    <div class="stat-icon">
-                        👥
-                    </div>
+        <div class="stat-info">
+            <span>Total Employees</span>
+            <strong id="totalEmployees">0</strong>
+        </div>
+    </div>
 
-                    <div class="stat-info">
+    <!-- Attendance -->
+    <div class="stat-card"
+         data-card="attendance"
+         role="button"
+         tabindex="0"
+         onclick="openPage('attendance')"
+         onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openPage('attendance')}">
 
-                        <span>
-                            Total Employees
-                        </span>
+        <div class="stat-icon">✓</div>
 
-                        <strong id="totalEmployees">
-                            0
-                        </strong>
+        <div class="stat-info">
+            <span>Attendance</span>
+            <strong id="totalAttendance">0</strong>
+        </div>
+    </div>
 
-                    </div>
+    <!-- Leave Requests -->
+    <div class="stat-card"
+         data-card="leave"
+         role="button"
+         tabindex="0"
+         onclick="openPage('leave')"
+         onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openPage('leave')}">
 
-                </div>
+        <div class="stat-icon">📅</div>
 
+        <div class="stat-info">
+            <span>Leave Requests</span>
+            <strong id="totalLeaves">0</strong>
+        </div>
+    </div>
 
-                <!-- Attendance -->
+    <!-- My Tasks -->
+    <div class="stat-card"
+         data-card="tasks"
+         role="button"
+         tabindex="0"
+         onclick="openPage('tasks')"
+         onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openPage('tasks')}">
 
-                <div
-                    class="stat-card"
-                    data-card="attendance"
-                >
+        <div class="stat-icon">☑</div>
 
-                    <div class="stat-icon">
-                        ✓
-                    </div>
+        <div class="stat-info">
+            <span>My Tasks</span>
+            <strong id="totalTasks">0</strong>
+        </div>
+    </div>
 
-                    <div class="stat-info">
-
-                        <span>
-                            Attendance
-                        </span>
-
-                        <strong id="attendanceCount">
-                            0
-                        </strong>
-
-                    </div>
-
-                </div>
-
-
-                <!-- Leave -->
-
-                <div
-                    class="stat-card"
-                    data-card="leave"
-                >
-
-                    <div class="stat-icon">
-                        📅
-                    </div>
-
-                    <div class="stat-info">
-
-                        <span>
-                            Leave Requests
-                        </span>
-
-                        <strong id="leaveCount">
-                            0
-                        </strong>
-
-                    </div>
-
-                </div>
-
-
-                <!-- Tasks -->
-
-                <div
-                    class="stat-card"
-                    data-card="tasks"
-                >
-
-                    <div class="stat-icon">
-                        ☑
-                    </div>
-
-                    <div class="stat-info">
-
-                        <span>
-                            My Tasks
-                        </span>
-
-                        <strong id="taskCount">
-                            0
-                        </strong>
-
-                    </div>
-
-                </div>
-
-            </section>
+</section>
 
 
 

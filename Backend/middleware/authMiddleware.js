@@ -1,22 +1,50 @@
+
+const jwt = require("jsonwebtoken");
 const Employee = require("../models/Employee");
 
 // ==========================================
-// PROTECT ROUTE
+// PROTECT ROUTE - JWT AUTHENTICATION
 // ==========================================
 const protect = async (req, res, next) => {
     try {
-        const employeeId = req.headers["employee-id"];
+        const authHeader = req.headers.authorization;
 
-        if (!employeeId) {
+        if (!authHeader || !authHeader.startsWith("Bearer ")) {
             return res.status(401).json({
                 success: false,
                 message: "Authentication required."
             });
         }
 
-        const employee = await Employee.findOne({
-            employeeId: employeeId.toUpperCase()
-        }).select("-password");
+        const token = authHeader.slice(7).trim();
+
+        if (!token) {
+            return res.status(401).json({
+                success: false,
+                message: "Authentication token is missing."
+            });
+        }
+
+        if (!process.env.JWT_SECRET) {
+            console.error("JWT_SECRET is not configured.");
+
+            return res.status(500).json({
+                success: false,
+                message: "Authentication server configuration error."
+            });
+        }
+
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+        if (!decoded || !decoded.id) {
+            return res.status(401).json({
+                success: false,
+                message: "Invalid authentication token."
+            });
+        }
+
+        const employee = await Employee.findById(decoded.id)
+            .select("-password");
 
         if (!employee) {
             return res.status(401).json({
@@ -33,10 +61,20 @@ const protect = async (req, res, next) => {
         }
 
         req.user = employee;
-
         next();
 
     } catch (error) {
+        if (
+            error.name === "JsonWebTokenError" ||
+            error.name === "TokenExpiredError" ||
+            error.name === "NotBeforeError"
+        ) {
+            return res.status(401).json({
+                success: false,
+                message: "Invalid or expired token."
+            });
+        }
+
         console.error("AUTH MIDDLEWARE ERROR:", error);
 
         return res.status(500).json({
@@ -46,12 +84,10 @@ const protect = async (req, res, next) => {
     }
 };
 
-
 // ==========================================
 // ADMIN ONLY
 // ==========================================
 const adminOnly = (req, res, next) => {
-
     if (!req.user) {
         return res.status(401).json({
             success: false,
@@ -69,12 +105,10 @@ const adminOnly = (req, res, next) => {
     next();
 };
 
-
 // ==========================================
-// CHECK OWN RECORD
+// OWN RECORD OR ADMIN
 // ==========================================
 const ownRecordOrAdmin = (req, res, next) => {
-
     if (!req.user) {
         return res.status(401).json({
             success: false,
@@ -82,16 +116,20 @@ const ownRecordOrAdmin = (req, res, next) => {
         });
     }
 
-    // Admin can access everything
     if (req.user.role === "Admin") {
         return next();
     }
 
-    // Get employee ID from request
-    const requestedEmployeeId =
+    const requestedEmployeeId = String(
         req.params.employeeId ||
-        req.body.employeeId ||
-        req.query.employeeId;
+        req.body?.employeeId ||
+        req.query.employeeId ||
+        ""
+    ).trim();
+
+    const loggedInEmployeeId = String(
+        req.user.employeeId || ""
+    ).trim();
 
     if (!requestedEmployeeId) {
         return res.status(400).json({
@@ -101,8 +139,9 @@ const ownRecordOrAdmin = (req, res, next) => {
     }
 
     if (
+        !loggedInEmployeeId ||
         requestedEmployeeId.toUpperCase() !==
-        req.user.employeeId.toUpperCase()
+        loggedInEmployeeId.toUpperCase()
     ) {
         return res.status(403).json({
             success: false,
@@ -113,7 +152,9 @@ const ownRecordOrAdmin = (req, res, next) => {
     next();
 };
 
-
+// ==========================================
+// EXPORT MIDDLEWARE
+// ==========================================
 module.exports = {
     protect,
     adminOnly,

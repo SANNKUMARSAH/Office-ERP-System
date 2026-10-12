@@ -6,6 +6,7 @@
 // API & LOGIN INFORMATION
 // ============================================================
 
+const token = localStorage.getItem("token");
 const API_URL = "http://localhost:5000/api";
 
 const isLoggedIn = localStorage.getItem("isLoggedIn");
@@ -95,7 +96,7 @@ if (currentDateElement) {
 function getHeaders() {
     return {
         "Content-Type": "application/json",
-        "employee-id": employeeId
+        "Authorization": `Bearer ${token}`
     };
 }
 
@@ -104,19 +105,30 @@ function getHeaders() {
 // API REQUEST FUNCTION
 // ============================================================
 
-async function apiRequest(url, options = {}) {
 
+async function apiRequest(url, options = {}) {
     try {
+        const token = localStorage.getItem("token");
+
+        console.log("Token available:", !!token);
 
         const response = await fetch(url, {
             ...options,
             headers: {
                 ...getHeaders(),
-                ...(options.headers || {})
+                ...(options.headers || {}),
+                ...(token
+                    ? { "Authorization": `Bearer ${token}` }
+                    : {})
             }
         });
 
         const data = await response.json();
+
+        if (response.status === 401) {
+            console.error("Authentication failed:", data.message);
+            throw new Error(data.message || "Invalid or expired token.");
+        }
 
         if (!response.ok) {
             throw new Error(
@@ -127,12 +139,11 @@ async function apiRequest(url, options = {}) {
         return data;
 
     } catch (error) {
-
         console.error("API ERROR:", error);
-
         throw error;
     }
 }
+
 
 
 // ============================================================
@@ -161,7 +172,7 @@ function applyRolePermissions() {
 
 
 // ============================================================
-// MENU CLICK
+// MENU CLICK - ERP + CRM ROLE PERMISSIONS
 // ============================================================
 
 document.querySelectorAll("[data-page]").forEach(menu => {
@@ -170,29 +181,48 @@ document.querySelectorAll("[data-page]").forEach(menu => {
 
         const page = this.getAttribute("data-page");
 
-        // Employee permission check
+        // ADMIN ONLY PAGES
+        const adminOnlyPages = [
+            "settings"
+        ];
+
+        // ADMIN + MANAGEMENT PAGES
+        const managementPages = [
+            "employees",
+            "reports",
+            "customers",
+            "leads",
+            "followups"
+        ];
+
+        // Check Admin-only permissions
         if (
-            userRole !== "Admin" &&
-            (
-                page === "employees" ||
-                page === "reports" ||
-                page === "settings"
-            )
+            adminOnlyPages.includes(page) &&
+            userRole !== "Admin"
         ) {
-
             alert("You do not have permission to access this page.");
-
             return;
         }
 
+        // Check Admin and Management permissions
+        if (
+            managementPages.includes(page) &&
+            userRole !== "Admin" &&
+            userRole !== "Management"
+        ) {
+            alert("You do not have permission to access this page.");
+            return;
+        }
+
+        // Open selected page
         openPage(page);
+
     });
 
 });
 
-
 // ============================================================
-// OPEN PAGE
+// OPEN PAGE - ERP + CRM
 // ============================================================
 
 function openPage(page) {
@@ -200,17 +230,19 @@ function openPage(page) {
     setActiveMenu(page);
 
     switch (page) {
+case "payments":
+    showPayments();
+    break;
+
 
         case "dashboard":
             showDashboard();
             break;
 
         case "employees":
-
-            if (userRole === "Admin") {
+            if (userRole === "Admin" || userRole === "Management") {
                 showEmployees();
             }
-
             break;
 
         case "attendance":
@@ -226,27 +258,40 @@ function openPage(page) {
             break;
 
         case "payroll":
-            showPayroll();
+            if (userRole === "Admin") {
+                showPayroll();
+            }
             break;
 
         case "reports":
-
-            if (userRole === "Admin") {
+            if (userRole === "Admin" || userRole === "Management") {
                 showReports();
             }
-
             break;
 
         case "settings":
-
             if (userRole === "Admin") {
                 showSettings();
             }
-
             break;
 
         case "calendar":
             showCalendar();
+            break;
+
+        // CRM MODULES
+        case "customers":
+        case "leads":
+        case "followups":
+            if (
+                userRole === "Admin" ||
+                userRole === "Management"
+            ) {
+                renderCRMPage(page);
+            } else {
+                alert("You do not have permission to access this page.");
+                showDashboard();
+            }
             break;
 
         default:
@@ -255,6 +300,76 @@ function openPage(page) {
 }
 
 
+ // ============================================================
+ // PAYMENTS MODULE
+ // ============================================================
+
+
+
+function showPayments() {
+    const pageTitle = document.getElementById("pageTitle");
+    const pageDescription = document.getElementById("pageDescription");
+    const dashboardCards = document.getElementById("dashboardCards");
+    const quickActions = document.getElementById("quickActions");
+    const pageContent = document.getElementById("pageContent");
+    const dateBox = document.getElementById("dateBox");
+
+    if (!pageContent) {
+        console.error("pageContent element not found.");
+        return;
+    }
+
+    // Update page heading
+    if (pageTitle) pageTitle.textContent = "Payments Management";
+
+    if (pageDescription) {
+        pageDescription.textContent = "Manage and track office payments.";
+    }
+
+    // Hide dashboard-only sections
+    if (dashboardCards) dashboardCards.style.display = "none";
+    if (quickActions) quickActions.style.display = "none";
+    if (dateBox) dateBox.style.display = "none";
+
+    // Update only the dynamic page section
+    pageContent.innerHTML = `
+        <div class="content-card">
+            <button
+                type="button"
+                class="back-btn"
+                onclick="openPage('dashboard')"
+            >
+                &#8592; Back to Dashboard
+            </button>
+
+            <h2>Payments Management</h2>
+            <p>Manage and track office payments.</p>
+
+            <div class="stats-container">
+                <div class="stat-card">
+                    <h3>Total Payments</h3>
+                    <p>Coming Soon</p>
+                </div>
+
+                <div class="stat-card">
+                    <h3>Pending Payments</h3>
+                    <p>Coming Soon</p>
+                </div>
+
+                <div class="stat-card">
+                    <h3>Completed Payments</h3>
+                    <p>Coming Soon</p>
+                </div>
+            </div>
+
+            <p>Payment management features will be available soon.</p>
+
+            <button type="button" disabled>
+                Coming Soon
+            </button>
+        </div>
+    `;
+}
 // ============================================================
 // ACTIVE MENU
 // ============================================================
@@ -268,7 +383,9 @@ function setActiveMenu(page) {
         if (item.getAttribute("data-page") === page) {
             item.classList.add("active");
         }
+
     });
+
 }
 
 
@@ -276,75 +393,72 @@ function setActiveMenu(page) {
 // DASHBOARD
 // ============================================================
 
-function showDashboard() {
 
+function showDashboard() {
     pageTitle.textContent = "Dashboard";
 
     pageDescription.textContent =
         "Welcome to Sysacs Technology Private Limited ERP Management System.";
 
-    pageContent.innerHTML = `
+    const dashboardCards = document.getElementById("dashboardCards");
+    const quickActions = document.getElementById("quickActions");
+    const dateBox = document.getElementById("dateBox");
 
+    if (dashboardCards) dashboardCards.style.display = "";
+    if (quickActions) quickActions.style.display = "";
+    if (dateBox) dateBox.style.display = "";
+
+    pageContent.innerHTML = `
         <div class="dashboard-page">
 
             <div class="welcome-box">
-
-                <h2>
-                    Welcome, ${escapeHtml(employeeName)} 👋
-                </h2>
-
-                <p>
-                    Manage your office activities from one place.
-                </p>
-
+                <h2>Welcome, ${escapeHtml(employeeName)} 👋</h2>
+                <p>Manage your office activities from one place.</p>
             </div>
 
             <div class="dashboard-stats">
 
-                <div class="stat-card">
+                ${
+                    userRole === "Admin"
+                        ? `
+                            <div class="stat-card clickable-card"
+                                 role="button" tabindex="0"
+                                 onclick="openPage('employees')"
+                                 onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openPage('employees')}">
+                                <h3>👥 Total Employees</h3>
+                                <div id="totalEmployees">0</div>
+                            </div>
+                        `
+                        : ""
+                }
 
-                    <h3>Employees</h3>
-
-                    <div id="totalEmployees">
-                        0
-                    </div>
-
+                <div class="stat-card clickable-card"
+                     role="button" tabindex="0"
+                     onclick="openPage('attendance')"
+                     onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openPage('attendance')}">
+                    <h3>✓ Attendance</h3>
+                    <div id="totalAttendance">0</div>
                 </div>
 
-                <div class="stat-card">
-
-                    <h3>Attendance</h3>
-
-                    <div id="totalAttendance">
-                        0
-                    </div>
-
+                <div class="stat-card clickable-card"
+                     role="button" tabindex="0"
+                     onclick="openPage('leave')"
+                     onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openPage('leave')}">
+                    <h3>📅 Leave Requests</h3>
+                    <div id="totalLeaves">0</div>
                 </div>
 
-                <div class="stat-card">
-
-                    <h3>Leave</h3>
-
-                    <div id="totalLeaves">
-                        0
-                    </div>
-
-                </div>
-
-                <div class="stat-card">
-
-                    <h3>Tasks</h3>
-
-                    <div id="totalTasks">
-                        0
-                    </div>
-
+                <div class="stat-card clickable-card"
+                     role="button" tabindex="0"
+                     onclick="openPage('tasks')"
+                     onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openPage('tasks')}">
+                    <h3>☑ My Tasks</h3>
+                    <div id="totalTasks">0</div>
                 </div>
 
             </div>
 
             <div class="quick-actions">
-
                 <h2>Quick Actions</h2>
 
                 <div class="quick-action-grid">
@@ -352,46 +466,35 @@ function showDashboard() {
                     ${
                         userRole === "Admin"
                             ? `
-                                <button
-                                    class="quick-action-card"
-                                    onclick="openPage('employees')"
-                                >
+                                <button class="quick-action-card"
+                                        onclick="openPage('employees')">
                                     👥 Employees
                                 </button>
                             `
                             : ""
                     }
 
-                    <button
-                        class="quick-action-card"
-                        onclick="openPage('attendance')"
-                    >
+                    <button class="quick-action-card"
+                            onclick="openPage('attendance')">
                         🕒 Attendance
                     </button>
 
-                    <button
-                        class="quick-action-card"
-                        onclick="openPage('leave')"
-                    >
+                    <button class="quick-action-card"
+                            onclick="openPage('leave')">
                         📅 Leave
                     </button>
 
-                    <button
-                        class="quick-action-card"
-                        onclick="openPage('tasks')"
-                    >
+                    <button class="quick-action-card"
+                            onclick="openPage('tasks')">
                         ✅ Tasks
                     </button>
 
-                    <button
-                        class="quick-action-card"
-                        onclick="openPage('payroll')"
-                    >
+                    <button class="quick-action-card"
+                            onclick="openPage('payroll')">
                         💰 Payroll
                     </button>
 
                 </div>
-
             </div>
 
         </div>
@@ -405,73 +508,75 @@ function showDashboard() {
 // DASHBOARD STATS
 // ============================================================
 
+
+
 async function loadDashboardStats() {
+    const stats = [
+        { key: "attendance", url: `${API_URL}/attendance`, elementId: "totalAttendance" },
+        { key: "leaves", url: `${API_URL}/leaves`, elementId: "totalLeaves" },
+        { key: "tasks", url: `${API_URL}/tasks`, elementId: "totalTasks" }
+    ];
 
-    try {
+    if (userRole === "Admin") {
+        stats.push({
+            key: "employees",
+            url: `${API_URL}/employees`,
+            elementId: "totalEmployees"
+        });
+    }
 
-        const attendance = await apiRequest(
-            `${API_URL}/attendance`
-        );
+    function getCount(response) {
+        if (Array.isArray(response)) return response.length;
 
-        const leaves = await apiRequest(
-            `${API_URL}/leaves`
-        );
-
-        const tasks = await apiRequest(
-            `${API_URL}/tasks`
-        );
-
-        const attendanceElement =
-            document.getElementById("totalAttendance");
-
-        const leaveElement =
-            document.getElementById("totalLeaves");
-
-        const taskElement =
-            document.getElementById("totalTasks");
-
-        if (attendanceElement) {
-            attendanceElement.textContent =
-                attendance.count || attendance.data?.length || 0;
+        if (typeof response?.count === "number") {
+            return response.count;
         }
 
-        if (leaveElement) {
-            leaveElement.textContent =
-                leaves.count || leaves.data?.length || 0;
+        if (typeof response?.total === "number") {
+            return response.total;
         }
 
-        if (taskElement) {
-            taskElement.textContent =
-                tasks.count || tasks.data?.length || 0;
-        }
-
-        if (userRole === "Admin") {
-
-            const employees = await apiRequest(
-                `${API_URL}/employees`
-            );
-
-            const employeeElement =
-                document.getElementById("totalEmployees");
-
-            if (employeeElement) {
-
-                employeeElement.textContent =
-                    employees.count ||
-                    employees.data?.length ||
-                    0;
+        for (const key of [
+            "data",
+            "employees",
+            "attendance",
+            "leaves",
+            "tasks"
+        ]) {
+            if (Array.isArray(response?.[key])) {
+                return response[key].length;
             }
         }
 
-    } catch (error) {
-
-        console.error(
-            "Dashboard stats error:",
-            error
-        );
+        return 0;
     }
-}
 
+    await Promise.all(
+        stats.map(async ({ key, url, elementId }) => {
+            const element = document.getElementById(elementId);
+
+            if (!element) {
+                console.error(
+                    `Dashboard element missing: #${elementId}`
+                );
+                return;
+            }
+
+            element.textContent = "...";
+
+            try {
+                const response = await apiRequest(url);
+
+                console.log(`${key} API response:`, response);
+
+                element.textContent = getCount(response);
+            } catch (error) {
+                console.error(`${key} stats failed:`, error);
+                element.textContent = "Error";
+            }
+        })
+    );
+}
 
 // ============================================================
 // EMPLOYEES PAGE
@@ -2822,13 +2927,11 @@ function calculateNetSalary() {
             : "0.00";
 }
 
-
 // ============================================================
 // SAVE PAYROLL
 // ============================================================
 
 async function savePayroll(event) {
-
     event.preventDefault();
 
     if (userRole !== "Admin") {
@@ -2837,110 +2940,80 @@ async function savePayroll(event) {
     }
 
     try {
+        const id = document.getElementById("payrollRecordId").value;
 
-        const id =
-            document.getElementById(
-                "payrollRecordId"
-            ).value;
+        const employeeId = document
+            .getElementById("payrollEmployeeId")
+            .value.trim();
+
+        const month = document
+            .getElementById("payrollSalaryMonth")
+            .value;
+
+        const basicSalaryValue = document
+            .getElementById("payrollBasicSalary")
+            .value;
+
+        if (!employeeId || !month || basicSalaryValue === "") {
+            alert("Please enter Employee ID, Month and Basic Salary.");
+            return;
+        }
 
         const data = {
+            employeeId: employeeId,
+            month: month,
+            basicSalary: Number(basicSalaryValue),
 
-            employeeId:
-                document.getElementById(
-                    "payrollEmployeeId"
-                ).value.trim(),
+            allowances: Number(
+                document.getElementById("payrollAllowances").value
+            ) || 0,
 
-            salaryMonth:
-                document.getElementById(
-                    "payrollSalaryMonth"
-                ).value,
+            deductions: Number(
+                document.getElementById("payrollDeductions").value
+            ) || 0,
 
-            basicSalary:
-                Number(
-                    document.getElementById(
-                        "payrollBasicSalary"
-                    ).value
-                ),
-
-            allowances:
-                Number(
-                    document.getElementById(
-                        "payrollAllowances"
-                    ).value
-                ) || 0,
-
-            deductions:
-                Number(
-                    document.getElementById(
-                        "payrollDeductions"
-                    ).value
-                ) || 0,
-
-            paymentStatus:
-                document.getElementById(
-                    "payrollPaymentStatus"
-                ).value
+            paymentStatus: document
+                .getElementById("payrollPaymentStatus")
+                .value
         };
 
-        if (data.basicSalary < 0) {
-            alert("Basic salary cannot be negative.");
-            return;
-        }
-
-        if (data.allowances < 0) {
-            alert("Allowances cannot be negative.");
-            return;
-        }
-
-        if (data.deductions < 0) {
-            alert("Deductions cannot be negative.");
-            return;
-        }
-
         if (
-            data.basicSalary +
-            data.allowances -
-            data.deductions < 0
+            !Number.isFinite(data.basicSalary) ||
+            data.basicSalary <= 0
         ) {
-            alert(
-                "Deductions cannot be greater than total earnings."
-            );
+            alert("Basic salary must be greater than 0.");
+            return;
+        }
+
+        if (data.allowances < 0 || data.deductions < 0) {
+            alert("Allowances and deductions cannot be negative.");
+            return;
+        }
+
+        if (data.basicSalary + data.allowances - data.deductions < 0) {
+            alert("Deductions cannot be greater than total earnings.");
             return;
         }
 
         if (id) {
+            await apiRequest(`${API_URL}/payroll/${id}`, {
+                method: "PUT",
+                body: JSON.stringify(data)
+            });
 
-            await apiRequest(
-                `${API_URL}/payroll/${id}`,
-                {
-                    method: "PUT",
-                    body: JSON.stringify(data)
-                }
-            );
-
-            alert(
-                "Payroll updated successfully."
-            );
-
+            alert("Payroll updated successfully.");
         } else {
+            await apiRequest(`${API_URL}/payroll`, {
+                method: "POST",
+                body: JSON.stringify(data)
+            });
 
-            await apiRequest(
-                `${API_URL}/payroll`,
-                {
-                    method: "POST",
-                    body: JSON.stringify(data)
-                }
-            );
-
-            alert(
-                "Payroll created successfully."
-            );
+            alert("Payroll created successfully.");
         }
 
-        loadPayroll();
+        await loadPayroll();
 
     } catch (error) {
-
         alert(error.message);
     }
 }
@@ -4320,6 +4393,8 @@ if (logoutBtn) {
             localStorage.removeItem("employeeId");
             localStorage.removeItem("employeeName");
             localStorage.removeItem("role");
+            localStorage.removeItem("token");
+            console.log("Token after logout:", localStorage.getItem("token"));
 
             window.location.href =
                 "index.html";
@@ -4528,3 +4603,358 @@ document.addEventListener("DOMContentLoaded", () => {
 document.getElementById("dateBox").addEventListener("click", function () {
     window.location.href = "calendar.html";
 });
+
+
+// ==========================================
+// CRM FRONTEND MODULES
+// Customers, Leads & Follow-ups
+// ==========================================
+
+const crmData = {
+    customers: [],
+    leads: [],
+    followups: []
+};
+
+// CRM page renderer
+// ==========================================
+// CRM API CONFIGURATION
+// ==========================================
+
+const CRM_API_URL = "http://localhost:5000/api";
+
+// ==========================================
+// RENDER CRM PAGE
+// ==========================================
+
+
+// ==========================================
+// RENDER CRM PAGE - CUSTOMERS, LEADS, FOLLOW-UPS
+// ==========================================
+
+async function renderCRMPage(page) {
+    const pageContent = document.getElementById("pageContent");
+
+    if (!pageContent) return;
+
+    const configs = {
+        customers: {
+            title: "Customers",
+            endpoint: `${CRM_API_URL}/customers`,
+            fields: ["name", "email", "phone", "company"],
+            columns: ["Name", "Email", "Phone", "Company"]
+        },
+        leads: {
+            title: "Leads",
+            endpoint: `${CRM_API_URL}/leads`,
+            fields: ["name", "email", "phone", "company", "status"],
+            columns: ["Name", "Email", "Phone", "Company", "Status"]
+        },
+        followups: {
+            title: "Follow-ups",
+            endpoint: `${CRM_API_URL}/followups`,
+            fields: ["name", "date", "notes", "status"],
+            columns: ["Name", "Follow-up Date", "Notes", "Status"]
+        }
+    };
+
+    const config = configs[page];
+    if (!config) return;
+
+    const itemName = {
+        customers: "Customer",
+        leads: "Lead",
+        followups: "Follow-up"
+    }[page];
+
+    // ==========================================
+    // PAGE HTML
+    // ==========================================
+
+    pageContent.innerHTML = `
+        <div class="crm-panel">
+            <div class="crm-panel-header">
+                <div>
+                    <h2>${config.title}</h2>
+                    <p>Manage your ${config.title.toLowerCase()}.</p>
+                </div>
+
+                <button type="button" id="crmAddBtn" class="crm-add-btn">
+                    + Add ${itemName}
+                </button>
+            </div>
+
+            <form id="crmForm" class="crm-form" hidden>
+
+                ${
+                    page === "followups"
+                    ? `
+                        <label>
+                            Customer / Lead Name
+                            <input name="name" type="text" required>
+                        </label>
+
+                        <label>
+                            Follow-up Date
+                            <input name="date" type="date" required>
+                        </label>
+
+                        <label>
+                            Notes
+                            <textarea name="notes"
+                                placeholder="Enter follow-up notes"></textarea>
+                        </label>
+
+                        <label>
+                            Status
+                            <select name="status">
+                                <option value="Pending">Pending</option>
+                                <option value="Completed">Completed</option>
+                            </select>
+                        </label>
+                    `
+                    : `
+                        <label>
+                            Name
+                            <input name="name" type="text" required>
+                        </label>
+
+                        <label>
+                            Email
+                            <input name="email" type="email">
+                        </label>
+
+                        <label>
+                            Phone
+                            <input name="phone" type="tel" required>
+                        </label>
+
+                        <label>
+                            Company
+                            <input name="company" type="text">
+                        </label>
+
+                        ${
+                            page === "leads"
+                            ? `
+                                <label>
+                                    Status
+                                    <select name="status">
+                                        <option value="New">New</option>
+                                        <option value="Contacted">Contacted</option>
+                                        <option value="Qualified">Qualified</option>
+                                        <option value="Won">Won</option>
+                                        <option value="Lost">Lost</option>
+                                    </select>
+                                </label>
+                            `
+                            : ""
+                        }
+                    `
+                }
+
+                <div class="crm-form-actions">
+                    <button type="submit" class="crm-add-btn">
+                        Save ${itemName}
+                    </button>
+
+                    <button type="button" id="crmCancelBtn">
+                        Cancel
+                    </button>
+                </div>
+            </form>
+
+            <p id="crmMessage" role="status"></p>
+
+            <div class="crm-table-wrap">
+                <table class="crm-table">
+                    <thead>
+                        <tr>
+                            ${config.columns.map(column =>
+                                `<th>${column}</th>`
+                            ).join("")}
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+
+                    <tbody id="crmTableBody"></tbody>
+                </table>
+            </div>
+        </div>
+    `;
+
+    const form = document.getElementById("crmForm");
+    const tableBody = document.getElementById("crmTableBody");
+    const message = document.getElementById("crmMessage");
+    const addButton = document.getElementById("crmAddBtn");
+    const cancelButton = document.getElementById("crmCancelBtn");
+
+    const columnCount = config.columns.length + 1;
+
+    addButton.addEventListener("click", () => {
+        form.hidden = false;
+        message.textContent = "";
+    });
+
+    cancelButton.addEventListener("click", () => {
+        form.reset();
+        form.hidden = true;
+        message.textContent = "";
+    });
+
+    // ==========================================
+    // LOAD RECORDS FROM MONGODB API
+    // ==========================================
+
+    async function loadRecords() {
+        tableBody.innerHTML = `
+            <tr>
+                <td colspan="${columnCount}">Loading...</td>
+            </tr>
+        `;
+
+        try {
+            const response = await fetch(config.endpoint);
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(
+                    data.message || "Unable to load records"
+                );
+            }
+
+            const records = Array.isArray(data)
+                ? data
+                : data.records || data.customers || data.leads || data.followUps || [];
+
+            tableBody.innerHTML = "";
+
+            if (records.length === 0) {
+                tableBody.innerHTML = `
+                    <tr>
+                        <td colspan="${columnCount}">
+                            No records found.
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            records.forEach(record => {
+                const row = document.createElement("tr");
+
+                config.fields.forEach(field => {
+                    const cell = document.createElement("td");
+
+                    let value = record[field];
+
+                    if (field === "date" && value) {
+                        value = String(value).slice(0, 10);
+                    }
+
+                    cell.textContent = value || "-";
+                    row.appendChild(cell);
+                });
+
+                const actionCell = document.createElement("td");
+                const deleteButton = document.createElement("button");
+
+                deleteButton.type = "button";
+                deleteButton.textContent = "Delete";
+
+                deleteButton.addEventListener("click", async () => {
+                    if (!confirm(`Delete this ${itemName.toLowerCase()}?`)) {
+                        return;
+                    }
+
+                    deleteButton.disabled = true;
+
+                    try {
+                        const deleteResponse = await fetch(
+                            `${config.endpoint}/${record._id}`,
+                            { method: "DELETE" }
+                        );
+
+                        const result = await deleteResponse.json();
+
+                        if (!deleteResponse.ok) {
+                            throw new Error(
+                                result.message || "Delete failed"
+                            );
+                        }
+
+                        message.textContent =
+                            `${itemName} deleted successfully.`;
+
+                        await loadRecords();
+                    } catch (error) {
+                        message.textContent = `Error: ${error.message}`;
+                        deleteButton.disabled = false;
+                    }
+                });
+
+                actionCell.appendChild(deleteButton);
+                row.appendChild(actionCell);
+                tableBody.appendChild(row);
+            });
+        } catch (error) {
+            tableBody.innerHTML = `
+                <tr>
+                    <td colspan="${columnCount}">
+                        Could not load data: ${error.message}
+                    </td>
+                </tr>
+            `;
+        }
+    }
+
+    // ==========================================
+    // SAVE RECORD TO MONGODB API
+    // ==========================================
+
+    form.addEventListener("submit", async event => {
+        event.preventDefault();
+
+        const formData = new FormData(form);
+        const record = Object.fromEntries(formData.entries());
+
+        message.textContent = "Saving...";
+
+        const saveButton = form.querySelector(
+            'button[type="submit"]'
+        );
+        saveButton.disabled = true;
+
+        try {
+            const response = await fetch(config.endpoint, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(record)
+            });
+
+            const result = await response.json();
+
+            if (!response.ok) {
+                throw new Error(
+                    result.message || `Unable to save ${itemName.toLowerCase()}`
+                );
+            }
+
+            message.textContent =
+                `${itemName} saved successfully.`;
+
+            form.reset();
+            form.hidden = true;
+
+            await loadRecords();
+        } catch (error) {
+            message.textContent = `Error: ${error.message}`;
+        } finally {
+            saveButton.disabled = false;
+        }
+    });
+
+    await loadRecords();
+}

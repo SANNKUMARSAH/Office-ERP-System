@@ -1,0 +1,119 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payroll Management | Office ERP</title>
+    <link rel="stylesheet" href="payroll.css">
+</head>
+<body>
+    <header class="topbar">
+        <div>
+            <h2>Office ERP</h2>
+            <p>Payroll Management</p>
+        </div>
+        <a href="dashboard.html" class="back-btn">Back to Dashboard</a>
+    </header>
+
+    <main class="container">
+        <section class="page-heading">
+            <div>
+                <h1>Payroll Management</h1>
+                <p>Manage employee salaries, deductions and payroll history.</p>
+            </div>
+            <button id="addPayrollBtn" class="primary-btn">+ Create Payroll</button>
+        </section>
+
+        <section class="stats">
+            <article class="stat-card">
+                <span>Total Records</span>
+                <h2 id="totalRecords">0</h2>
+            </article>
+            <article class="stat-card">
+                <span>Pending Payrolls</span>
+                <h2 id="pendingRecords">0</h2>
+            </article>
+            <article class="stat-card">
+                <span>Total Net Salary</span>
+                <h2 id="totalSalary">₹0</h2>
+            </article>
+        </section>
+
+        <section id="payrollFormSection" class="panel hidden">
+            <h2>Create Payroll</h2>
+            <form id="payrollForm">
+                <div class="form-grid">
+                    <label>
+                        Employee ID
+                        <input id="employeeId" type="text" required placeholder="EMP001">
+                    </label>
+
+                    <label>
+                        Month
+                        <input id="month" type="month" required>
+                    </label>
+
+                    <label>
+                        Basic Salary (₹)
+                        <input id="basicSalary" type="number" min="0" step="0.01" required>
+                    </label>
+
+                    <label>
+                        Allowances (₹)
+                        <input id="allowances" type="number" min="0" step="0.01" value="0">
+                    </label>
+
+                    <label>
+                        Deductions (₹)
+                        <input id="deductions" type="number" min="0" step="0.01" value="0">
+                    </label>
+
+                    <label>
+                        Net Salary (₹)
+                        <input id="netSalary" type="text" readonly value="₹0">
+                    </label>
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="primary-btn">Save Payroll</button>
+                    <button type="button" id="cancelFormBtn" class="secondary-btn">Cancel</button>
+                </div>
+            </form>
+        </section>
+
+        <section class="panel">
+            <div class="table-heading">
+                <h2>Payroll Records</h2>
+                <button id="refreshBtn" class="secondary-btn">Refresh</button>
+            </div>
+
+            <p id="message" role="status"></p>
+
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Employee ID</th>
+                            <th>Month</th>
+                            <th>Basic Salary</th>
+                            <th>Allowances</th>
+                            <th>Deductions</th>
+                            <th>Net Salary</th>
+                            <th>Status</th>
+                            <th>Bank Transfer</th>
+                        </tr>
+                    </thead>
+                    <tbody id="payrollTableBody">
+                        <tr>
+                            <td colspan="8">Loading payroll records...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </main>
+
+    <script src="payroll.js"></script>
+</body>
+</html>

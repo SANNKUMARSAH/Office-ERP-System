@@ -105,6 +105,13 @@ if (loginForm) {
             );
 
 
+            // JWT TOKEN
+            localStorage.setItem(
+                "token",
+                user.token
+            );
+
+
             localStorage.setItem(
                 "employeeId",
                 user.employeeId
